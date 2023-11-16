@@ -5,28 +5,21 @@ from statsmodels.tsa.arima.model import ARIMA
 
 st.set_page_config(page_title="Business Intelligence", page_icon=":bar_chart:", layout="wide")
 
-# Load data
 data = "data-streaming.csv"
 df = pd.read_csv(data)
 
-# Set up Streamlit dashboard layout
 st.title("Dashboard - Penonton Streaming")
 st.sidebar.title("Filter")
 
-# Sidebar - Pilih Genre
 selected_genre = st.sidebar.selectbox("Pilih Genre", df['Genre'].unique())
 
-# Sidebar - Pilih Negara untuk Forecasting (ARIMA)
 selected_country_arima = st.sidebar.selectbox("Pilih Negara untuk Forecasting (ARIMA)", df['Country'].unique())
 
-# Sidebar - Jumlah Negara yang Ingin Ditampilkan
 num_countries_top = st.sidebar.number_input("Jumlah Negara Terbanyak", min_value=1, max_value=len(df['Country'].unique()), value=10)
 num_countries_bottom = st.sidebar.number_input("Jumlah Negara Tersedikit", min_value=1, max_value=len(df['Country'].unique()), value=10)
 
-# Sidebar - Pilihan Negara Terbanyak atau Terendah
 selected_duration = st.sidebar.radio("Pilih Durasi", ["Terbanyak", "Terendah"])
 
-# Function for ARIMA Forecasting
 def arima_forecast(data, country):
     df_country = data[data['Country'] == country]
     df_country['Index'] = range(1, len(df_country) + 1)
@@ -41,7 +34,6 @@ def arima_forecast(data, country):
     forecast = results.get_forecast(steps=forecast_steps)
     return forecast.predicted_mean
 
-# Main Content
 col1, col2 = st.columns(2)
 
 # 1. Distribusi Penonton di Dunia (Top N Negara)
@@ -84,6 +76,7 @@ with col1:
                            category_orders={"Country": df_bottom_sorted.groupby('Country')['Duration_Watched (minutes)'].sum().sort_values().index})
    st.plotly_chart(fig_bar_genre, use_container_width=True)
 
+# 4. Hierarki Penonton
 with col2:
    # Sidebar
    st.sidebar.title("Filter")
@@ -100,6 +93,34 @@ with col2:
       st.plotly_chart(fig, use_container_width=True)
 
 
+# 5. Analisis Interaksi Penonton dengan Scatter Plot
+st.header("Analisis Interaksi Penonton dengan Scatter Plot")
+
+# Pilih negara untuk menganalisis interaksi
+selected_country_scatter = st.selectbox("Pilih Negara untuk Scatter Plot", df['Country'].unique())
+
+# Perolehan data interaksi dari kolom 'Interaction_Events'
+interaction_data_scatter = df[df['Country'] == selected_country_scatter]['Interaction_Events']
+
+# Analisis statistik sederhana dari data interaksi
+total_interactions_scatter = interaction_data_scatter.sum()
+average_interactions_scatter = interaction_data_scatter.mean()
+max_interactions_scatter = interaction_data_scatter.max()
+
+# Menampilkan informasi
+st.write(f"Total Interaksi untuk {selected_country_scatter}: {total_interactions_scatter}")
+st.write(f"Rata-rata Interaksi untuk {selected_country_scatter}: {average_interactions_scatter:.2f}")
+st.write(f"Interaksi Tertinggi untuk {selected_country_scatter}: {max_interactions_scatter}")
+
+# Scatter plot untuk melihat hubungan antara Duration_Watched dan Interaction_Events
+fig_scatter = px.scatter(df[df['Country'] == selected_country_scatter], 
+                         x='Duration_Watched (minutes)', 
+                         y='Interaction_Events', 
+                         title=f'Scatter Plot Interaksi vs. Durasi Menonton ({selected_country_scatter})',
+                         labels={'Duration_Watched (minutes)': 'Durasi Menonton (menit)', 'Interaction_Events': 'Jumlah Interaksi'})
+st.plotly_chart(fig_scatter, use_container_width=True)
+
+
 # Tabel Data
 st.header("Tabel Data")
 st.dataframe(filtered_df)
@@ -114,12 +135,14 @@ st.plotly_chart(fig_arima, use_container_width=True)
 # Implementasi dashboard EDA yang telah diubah
 # ...
 
-# Kesimpulan
-st.header("Kesimpulan Business Intelligence")
+
+# Kesimpulan ARIMA
+st.header("Kesimpulan ARIMA pada Data Streaming")
+
 # Menjelaskan kesimpulan dari model ARIMA
 st.markdown("""
 Model ARIMA digunakan untuk melakukan forecasting durasi menonton untuk suatu negara yang dipilih. 
-Beberapa kesimpulan yang dapat diambil dari model ARIMA ini meliputi:
+Beberapa kesimpulan yang dapat diambil dari model ARIMA ini berdasarkan data streaming meliputi:
 
 1. **Trend Forecasting:** Model ARIMA memberikan perkiraan tren durasi menonton di masa depan berdasarkan data historis.
 
